@@ -8,6 +8,10 @@ from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
 import time
 import zipfile
+import openai
+
+# Set your OpenAI API key here
+openai.api_key = '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'
 
 # Page title
 st.set_page_config(page_title='IZI MACHINE LEARNING', page_icon='🤖', layout='wide')
@@ -31,7 +35,6 @@ with st.expander('About this app'):
 - Altair for chart creation
 - Streamlit for user interface
     ''', language='markdown')
-
 
 # Sidebar for accepting input parameters
 with st.sidebar:
@@ -87,6 +90,19 @@ with st.sidebar:
 # Model selection
 st.sidebar.header('3. Select Model')
 model_type = st.sidebar.selectbox("Choose a model type", ("Random Forest", "Linear Regression"), help="Select the type of machine learning model to use.")
+
+# Chat with ChatGPT
+st.sidebar.header('4. Chat with ChatGPT')
+st.sidebar.markdown('Ask any questions you have about machine learning, data science, or using this app.')
+user_question = st.sidebar.text_input("Enter your question here:")
+if user_question:
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=user_question,
+        max_tokens=100
+    )
+    st.sidebar.write("ChatGPT Response:")
+    st.sidebar.write(response.choices[0].text.strip())
 
 # Initiate the model building process
 if 'df' in st.session_state: 
