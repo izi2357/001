@@ -155,8 +155,7 @@ if 'df' in st.session_state:
                     st.write("Displaying performance metrics ...")
                     time.sleep(sleep_time)
                     parameter_criterion_string = ' '.join([x.capitalize() for x in parameter_criterion.split('_')])
-                    results = pd.DataFrame([['Random forest' if model_type == "Random Forest" else 'Linear Regression', train_mse, train_r2, test_mse, test_r2]]).transpose()
-                    results.columns = ['Method', f'Training {parameter_criterion_string}', 'Training R2', f'Test {parameter_criterion_string}', 'Test R2']
+                    results = pd.DataFrame([[model_type, train_mse, train_r2, test_mse, test_r2]], columns=['Method', f'Training {parameter_criterion_string}', 'Training R2', f'Test {parameter_criterion_string}', 'Test R2'])
                     results = results.round(3)
                     
                     # Display data info
@@ -229,21 +228,26 @@ if 'df' in st.session_state:
                         performance_col = st.columns((2, 0.2, 3))
                         with performance_col[0]:
                             st.header('Model performance')
-                            st.dataframe(results.T.reset_index().rename(columns={'index': 'Parameter', 0: 'Value'}))
+                            st.dataframe(results)
                         with performance_col[2]:
                             st.header('Feature importance')
                             st.altair_chart(bars, theme='streamlit', use_container_width=True)
+                    else:
+                        performance_col = st.columns((2, 0.2, 3))
+                        with performance_col[0]:
+                            st.header('Model performance')
+                            st.dataframe(results)
 
                     # Prediction results
                     st.header('Prediction results')
                     s_y_train = pd.Series(y_train, name='actual').reset_index(drop=True)
                     s_y_train_pred = pd.Series(y_train_pred, name='predicted').reset_index(drop=True)
-                    df_train = pd.DataFrame(data=[s_y_train, s_y_train_pred], index=None).T
+                    df_train = pd.concat([s_y_train, s_y_train_pred], axis=1)
                     df_train['class'] = 'train'
                         
                     s_y_test = pd.Series(y_test, name='actual').reset_index(drop=True)
                     s_y_test_pred = pd.Series(y_test_pred, name='predicted').reset_index(drop=True)
-                    df_test = pd.DataFrame(data=[s_y_test, s_y_test_pred], index=None).T
+                    df_test = pd.concat([s_y_test, s_y_test_pred], axis=1)
                     df_test['class'] = 'test'
                     
                     df_prediction = pd.concat([df_train, df_test], axis=0)
