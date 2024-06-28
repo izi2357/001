@@ -8,15 +8,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
 import time
 import zipfile
-import subprocess
-import sys
-
-# Install OpenAI library if not already installed
-try:
-    import openai
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "openai"])
-    import openai
+import openai
 
 # Set your OpenAI API key here
 openai.api_key = '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'
@@ -104,13 +96,16 @@ st.sidebar.header('4. Chat with ChatGPT')
 st.sidebar.markdown('Ask any questions you have about machine learning, data science, or using this app.')
 user_question = st.sidebar.text_input("Enter your question here:")
 if user_question:
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=user_question,
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": user_question},
+        ],
         max_tokens=100
     )
     st.sidebar.write("ChatGPT Response:")
-    st.sidebar.write(response.choices[0].text.strip())
+    st.sidebar.write(response.choices[0].message['content'].strip())
 
 # Initiate the model building process
 if 'df' in st.session_state: 
