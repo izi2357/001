@@ -8,7 +8,15 @@ from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
 import time
 import zipfile
-import openai
+import subprocess
+import sys
+
+# Install OpenAI library if not already installed
+try:
+    import openai
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "openai"])
+    import openai
 
 # Set your OpenAI API key here
 openai.api_key = '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'
