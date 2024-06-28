@@ -8,7 +8,6 @@ from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
 import time
 import zipfile
-import base64
 
 # Page title
 st.set_page_config(page_title='IZI MACHINE LEARNING', page_icon='🤖', layout='wide')
@@ -43,6 +42,8 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file, index_col=False)
+        st.session_state['df'] = df
+        st.write("Custom data loaded successfully!")
 
     # Download example data
     @st.cache_data
@@ -63,6 +64,8 @@ with st.sidebar:
     example_data = st.toggle('Load example data')
     if example_data:
         df = pd.read_csv('https://raw.githubusercontent.com/dataprofessor/data/master/delaney_solubility_with_descriptors.csv')
+        st.session_state['df'] = df
+        st.write("Example data loaded successfully!")
 
     st.header('2. Set Parameters')
     parameter_split_size = st.slider('Data split ratio (% for Training Set)', 10, 90, 80, 5)
@@ -88,17 +91,16 @@ st.sidebar.header('3. Select Model')
 model_type = st.sidebar.selectbox("Choose a model type", ("Random Forest", "Linear Regression"))
 
 # Initiate the model building process
-if uploaded_file or example_data: 
+if 'df' in st.session_state: 
+    df = st.session_state['df']
+    st.write("Running model training ...")
+
     with st.spinner("Running ..."):
-    
-        st.write("Loading data ...")
-        time.sleep(sleep_time)
+        try:
+            st.write("Preparing data ...")
+            time.sleep(sleep_time)
 
-        st.write("Preparing data ...")
-        time.sleep(sleep_time)
-
-        # Data validation and preprocessing
-        if 'df' in locals():
+            # Data validation and preprocessing
             df = df.dropna()  # Drop missing values
             if df.select_dtypes(include=[np.number]).shape[1] == 0:
                 st.error("Uploaded CSV does not contain numeric data.")
@@ -157,112 +159,110 @@ if uploaded_file or example_data:
                     results.columns = ['Method', f'Training {parameter_criterion_string}', 'Training R2', f'Test {parameter_criterion_string}', 'Test R2']
                     results = results.round(3)
                     
-                # Display data info
-                st.header('Input data')
-                col = st.columns(4)
-                col[0].metric(label="No. of samples", value=X.shape[0], delta="")
-                col[1].metric(label="No. of X variables", value=X.shape[1], delta="")
-                col[2].metric(label="No. of Training samples", value=X_train.shape[0], delta="")
-                col[3].metric(label="No. of Test samples", value=X_test.shape[0], delta="")
-                
-                with st.expander('Initial dataset', expanded=True):
-                    st.dataframe(df, height=210, use_container_width=True)
-                with st.expander('Train split', expanded=False):
-                    train_col = st.columns((3,1))
-                    with train_col[0]:
-                        st.markdown('**X**')
-                        st.dataframe(X_train, height=210, hide_index=True, use_container_width=True)
-                    with train_col[1]:
-                        st.markdown('**y**')
-                        st.dataframe(y_train, height=210, hide_index=True, use_container_width=True)
-                with st.expander('Test split', expanded=False):
-                    test_col = st.columns((3,1))
-                    with test_col[0]:
-                        st.markdown('**X**')
-                        st.dataframe(X_test, height=210, hide_index=True, use_container_width=True)
-                    with test_col[1]:
-                        st.markdown('**y**')
-                        st.dataframe(y_test, height=210, hide_index=True, use_container_width=True)
-
-                # Zip dataset files
-                df.to_csv('dataset.csv', index=False)
-                X_train.to_csv('X_train.csv', index=False)
-                y_train.to_csv('y_train.csv', index=False)
-                X_test.to_csv('X_test.csv', index=False)
-                y_test.to_csv('y_test.csv', index=False)
-                
-                list_files = ['dataset.csv', 'X_train.csv', 'y_train.csv', 'X_test.csv', 'y_test.csv']
-                with zipfile.ZipFile('dataset.zip', 'w') as zipF:
-                    for file in list_files:
-                        zipF.write(file, compress_type=zipfile.ZIP_DEFLATED)
-
-                with open('dataset.zip', 'rb') as datazip:
-                    btn = st.download_button(
-                            label='Download ZIP',
-                            data=datazip,
-                            file_name="dataset.zip",
-                            mime="application/octet-stream"
-                            )
-                
-                # Display model parameters
-                st.header('Model parameters')
-                parameters_col = st.columns(3)
-                parameters_col[0].metric(label="Data split ratio (% for Training Set)", value=parameter_split_size, delta="")
-                if model_type == "Random Forest":
-                    parameters_col[1].metric(label="Number of estimators (n_estimators)", value=parameter_n_estimators, delta="")
-                    parameters_col[2].metric(label="Max features (max_features)", value=parameter_max_features_metric, delta="")
-                
-                # Display feature importance plot if Random Forest
-                if model_type == "Random Forest":
-                    importances = model.feature_importances_
-                    feature_names = list(X.columns)
-                    forest_importances = pd.Series(importances, index=feature_names)
-                    df_importance = forest_importances.reset_index().rename(columns={'index': 'feature', 0: 'value'})
+                    # Display data info
+                    st.header('Input data')
+                    col = st.columns(4)
+                    col[0].metric(label="No. of samples", value=X.shape[0], delta="")
+                    col[1].metric(label="No. of X variables", value=X.shape[1], delta="")
+                    col[2].metric(label="No. of Training samples", value=X_train.shape[0], delta="")
+                    col[3].metric(label="No. of Test samples", value=X_test.shape[0], delta="")
                     
-                    bars = alt.Chart(df_importance).mark_bar(size=40).encode(
-                            x='value:Q',
-                            y=alt.Y('feature:N', sort='-x')
-                        ).properties(height=250)
+                    with st.expander('Initial dataset', expanded=True):
+                        st.dataframe(df, height=210, use_container_width=True)
+                    with st.expander('Train split', expanded=False):
+                        train_col = st.columns((3,1))
+                        with train_col[0]:
+                            st.markdown('**X**')
+                            st.dataframe(X_train, height=210, hide_index=True, use_container_width=True)
+                        with train_col[1]:
+                            st.markdown('**y**')
+                            st.dataframe(y_train, height=210, hide_index=True, use_container_width=True)
+                    with st.expander('Test split', expanded=False):
+                        test_col = st.columns((3,1))
+                        with test_col[0]:
+                            st.markdown('**X**')
+                            st.dataframe(X_test, height=210, hide_index=True, use_container_width=True)
+                        with test_col[1]:
+                            st.markdown('**y**')
+                            st.dataframe(y_test, height=210, hide_index=True, use_container_width=True)
 
-                    performance_col = st.columns((2, 0.2, 3))
-                    with performance_col[0]:
-                        st.header('Model performance')
-                        st.dataframe(results.T.reset_index().rename(columns={'index': 'Parameter', 0: 'Value'}))
-                    with performance_col[2]:
-                        st.header('Feature importance')
-                        st.altair_chart(bars, theme='streamlit', use_container_width=True)
-
-                # Prediction results
-                st.header('Prediction results')
-                s_y_train = pd.Series(y_train, name='actual').reset_index(drop=True)
-                s_y_train_pred = pd.Series(y_train_pred, name='predicted').reset_index(drop=True)
-                df_train = pd.DataFrame(data=[s_y_train, s_y_train_pred], index=None).T
-                df_train['class'] = 'train'
+                    # Zip dataset files
+                    df.to_csv('dataset.csv', index=False)
+                    X_train.to_csv('X_train.csv', index=False)
+                    y_train.to_csv('y_train.csv', index=False)
+                    X_test.to_csv('X_test.csv', index=False)
+                    y_test.to_csv('y_test.csv', index=False)
                     
-                s_y_test = pd.Series(y_test, name='actual').reset_index(drop=True)
-                s_y_test_pred = pd.Series(y_test_pred, name='predicted').reset_index(drop=True)
-                df_test = pd.DataFrame(data=[s_y_test, s_y_test_pred], index=None).T
-                df_test['class'] = 'test'
-                
-                df_prediction = pd.concat([df_train, df_test], axis=0)
-                
-                prediction_col = st.columns((2, 0.2, 3))
-                
-                # Display dataframe
-                with prediction_col[0]:
-                    st.dataframe(df_prediction, height=320, use_container_width=True)
+                    list_files = ['dataset.csv', 'X_train.csv', 'y_train.csv', 'X_test.csv', 'y_test.csv']
+                    with zipfile.ZipFile('dataset.zip', 'w') as zipF:
+                        for file in list_files:
+                            zipF.write(file, compress_type=zipfile.ZIP_DEFLATED)
 
-                # Display scatter plot of actual vs predicted values
-                with prediction_col[2]:
-                    scatter = alt.Chart(df_prediction).mark_circle(size=60).encode(
-                                    x='actual',
-                                    y='predicted',
-                                    color='class'
-                              )
-                    st.altair_chart(scatter, theme='streamlit', use_container_width=True)
-        else:
-            st.error("No data available for processing. Please upload a CSV file or use the example data.")
+                    with open('dataset.zip', 'rb') as datazip:
+                        btn = st.download_button(
+                                label='Download ZIP',
+                                data=datazip,
+                                file_name="dataset.zip",
+                                mime="application/octet-stream"
+                                )
+                    
+                    # Display model parameters
+                    st.header('Model parameters')
+                    parameters_col = st.columns(3)
+                    parameters_col[0].metric(label="Data split ratio (% for Training Set)", value=parameter_split_size, delta="")
+                    if model_type == "Random Forest":
+                        parameters_col[1].metric(label="Number of estimators (n_estimators)", value=parameter_n_estimators, delta="")
+                        parameters_col[2].metric(label="Max features (max_features)", value=parameter_max_features_metric, delta="")
+                    
+                    # Display feature importance plot if Random Forest
+                    if model_type == "Random Forest":
+                        importances = model.feature_importances_
+                        feature_names = list(X.columns)
+                        forest_importances = pd.Series(importances, index=feature_names)
+                        df_importance = forest_importances.reset_index().rename(columns={'index': 'feature', 0: 'value'})
+                        
+                        bars = alt.Chart(df_importance).mark_bar(size=40).encode(
+                                x='value:Q',
+                                y=alt.Y('feature:N', sort='-x')
+                            ).properties(height=250)
 
-# Ask for CSV upload if none is detected
+                        performance_col = st.columns((2, 0.2, 3))
+                        with performance_col[0]:
+                            st.header('Model performance')
+                            st.dataframe(results.T.reset_index().rename(columns={'index': 'Parameter', 0: 'Value'}))
+                        with performance_col[2]:
+                            st.header('Feature importance')
+                            st.altair_chart(bars, theme='streamlit', use_container_width=True)
+
+                    # Prediction results
+                    st.header('Prediction results')
+                    s_y_train = pd.Series(y_train, name='actual').reset_index(drop=True)
+                    s_y_train_pred = pd.Series(y_train_pred, name='predicted').reset_index(drop=True)
+                    df_train = pd.DataFrame(data=[s_y_train, s_y_train_pred], index=None).T
+                    df_train['class'] = 'train'
+                        
+                    s_y_test = pd.Series(y_test, name='actual').reset_index(drop=True)
+                    s_y_test_pred = pd.Series(y_test_pred, name='predicted').reset_index(drop=True)
+                    df_test = pd.DataFrame(data=[s_y_test, s_y_test_pred], index=None).T
+                    df_test['class'] = 'test'
+                    
+                    df_prediction = pd.concat([df_train, df_test], axis=0)
+                    
+                    prediction_col = st.columns((2, 0.2, 3))
+                    
+                    # Display dataframe
+                    with prediction_col[0]:
+                        st.dataframe(df_prediction, height=320, use_container_width=True)
+
+                    # Display scatter plot of actual vs predicted values
+                    with prediction_col[2]:
+                        scatter = alt.Chart(df_prediction).mark_circle(size=60).encode(
+                                        x='actual',
+                                        y='predicted',
+                                        color='class'
+                                  )
+                        st.altair_chart(scatter, theme='streamlit', use_container_width=True)
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
 else:
     st.warning('👈 Upload a CSV file or click *"Load example data"* to get started!')
