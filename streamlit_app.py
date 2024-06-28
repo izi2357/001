@@ -11,7 +11,7 @@ import zipfile
 import openai
 
 # Set your OpenAI API key here
-openai.api_key = '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'
+openai.api_key = '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'
 
 # Page title
 st.set_page_config(page_title='IZI MACHINE LEARNING', page_icon='🤖', layout='wide')
