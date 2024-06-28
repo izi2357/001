@@ -36,14 +36,13 @@ with st.expander('About this app'):
 # Sidebar for accepting input parameters
 with st.sidebar:
     # Load data
-    st.header('1.1. Input data')
-
-    st.markdown('**1. Use custom data**')
+    st.header('1. Input Data')
+    st.markdown('Upload your dataset or use the example provided. Ensure your dataset has numeric values.')
     uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file, index_col=False)
         st.session_state['df'] = df
-        st.write("Custom data loaded successfully!")
+        st.success("Custom data loaded successfully!")
 
     # Download example data
     @st.cache_data
@@ -59,36 +58,35 @@ with st.sidebar:
         mime='text/csv',
     )
 
-    # Select example data
-    st.markdown('**1.2. Use example data**')
-    example_data = st.toggle('Load example data')
+    st.markdown('**Use example data**')
+    example_data = st.button('Load example data')
     if example_data:
-        df = pd.read_csv('https://raw.githubusercontent.com/dataprofessor/data/master/delaney_solubility_with_descriptors.csv')
+        df = example_csv
         st.session_state['df'] = df
-        st.write("Example data loaded successfully!")
+        st.success("Example data loaded successfully!")
 
     st.header('2. Set Parameters')
-    parameter_split_size = st.slider('Data split ratio (% for Training Set)', 10, 90, 80, 5)
+    parameter_split_size = st.slider('Data split ratio (% for Training Set)', 10, 90, 80, 5, help="Adjust the percentage of data to be used for training the model. The remaining will be used for testing.")
 
     st.subheader('2.1. Learning Parameters')
-    with st.expander('See parameters'):
-        parameter_n_estimators = st.slider('Number of estimators (n_estimators)', 0, 1000, 100, 100)
-        parameter_max_features = st.select_slider('Max features (max_features)', options=['all', 'sqrt', 'log2'])
-        parameter_min_samples_split = st.slider('Minimum number of samples required to split an internal node (min_samples_split)', 2, 10, 2, 1)
-        parameter_min_samples_leaf = st.slider('Minimum number of samples required to be at a leaf node (min_samples_leaf)', 1, 10, 2, 1)
+    with st.expander('Learning Parameters'):
+        parameter_n_estimators = st.slider('Number of estimators (n_estimators)', 10, 1000, 100, 10, help="The number of trees in the forest for the Random Forest model.")
+        parameter_max_features = st.select_slider('Max features (max_features)', options=['all', 'sqrt', 'log2'], help="The number of features to consider when looking for the best split.")
+        parameter_min_samples_split = st.slider('Min samples split (min_samples_split)', 2, 10, 2, 1, help="The minimum number of samples required to split an internal node.")
+        parameter_min_samples_leaf = st.slider('Min samples leaf (min_samples_leaf)', 1, 10, 2, 1, help="The minimum number of samples required to be at a leaf node.")
 
     st.subheader('2.2. General Parameters')
-    with st.expander('See parameters', expanded=False):
-        parameter_random_state = st.slider('Seed number (random_state)', 0, 1000, 42, 1)
-        parameter_criterion = st.select_slider('Performance measure (criterion)', options=['squared_error', 'absolute_error', 'friedman_mse'])
-        parameter_bootstrap = st.select_slider('Bootstrap samples when building trees (bootstrap)', options=[True, False])
-        parameter_oob_score = st.select_slider('Whether to use out-of-bag samples to estimate the R^2 on unseen data (oob_score)', options=[False, True])
+    with st.expander('General Parameters', expanded=False):
+        parameter_random_state = st.slider('Seed number (random_state)', 0, 1000, 42, 1, help="Seed used by the random number generator.")
+        parameter_criterion = st.select_slider('Performance measure (criterion)', options=['squared_error', 'absolute_error', 'friedman_mse'], help="The function to measure the quality of a split.")
+        parameter_bootstrap = st.select_slider('Bootstrap samples (bootstrap)', options=[True, False], help="Whether bootstrap samples are used when building trees.")
+        parameter_oob_score = st.select_slider('Out-of-bag score (oob_score)', options=[False, True], help="Whether to use out-of-bag samples to estimate the R^2 on unseen data.")
 
-    sleep_time = st.slider('Sleep time', 0, 3, 0)
+    sleep_time = st.slider('Sleep time', 0, 3, 0, help="Time to wait between steps for demonstration purposes.")
 
 # Model selection
 st.sidebar.header('3. Select Model')
-model_type = st.sidebar.selectbox("Choose a model type", ("Random Forest", "Linear Regression"))
+model_type = st.sidebar.selectbox("Choose a model type", ("Random Forest", "Linear Regression"), help="Select the type of machine learning model to use.")
 
 # Initiate the model building process
 if 'df' in st.session_state: 
@@ -159,7 +157,7 @@ if 'df' in st.session_state:
                     results = results.round(3)
                     
                     # Display data info
-                    st.header('Input data')
+                    st.header('Input Data Summary')
                     col = st.columns(4)
                     col[0].metric(label="No. of samples", value=X.shape[0], delta="")
                     col[1].metric(label="No. of X variables", value=X.shape[1], delta="")
@@ -206,7 +204,7 @@ if 'df' in st.session_state:
                                 )
                     
                     # Display model parameters
-                    st.header('Model parameters')
+                    st.header('Model Parameters')
                     parameters_col = st.columns(3)
                     parameters_col[0].metric(label="Data split ratio (% for Training Set)", value=parameter_split_size, delta="")
                     if model_type == "Random Forest":
@@ -227,19 +225,19 @@ if 'df' in st.session_state:
 
                         performance_col = st.columns((2, 0.2, 3))
                         with performance_col[0]:
-                            st.header('Model performance')
+                            st.header('Model Performance')
                             st.dataframe(results)
                         with performance_col[2]:
-                            st.header('Feature importance')
+                            st.header('Feature Importance')
                             st.altair_chart(bars, theme='streamlit', use_container_width=True)
                     else:
                         performance_col = st.columns((2, 0.2, 3))
                         with performance_col[0]:
-                            st.header('Model performance')
+                            st.header('Model Performance')
                             st.dataframe(results)
 
                     # Prediction results
-                    st.header('Prediction results')
+                    st.header('Prediction Results')
                     s_y_train = pd.Series(y_train, name='actual').reset_index(drop=True)
                     s_y_train_pred = pd.Series(y_train_pred, name='predicted').reset_index(drop=True)
                     df_train = pd.concat([s_y_train, s_y_train_pred], axis=1)
