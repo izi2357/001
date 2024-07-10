@@ -7,14 +7,12 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
 import time
-from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
+from transformers import pipeline
 
-# Load the GPT-J model
+# Load the distilGPT-2 model
 @st.cache_resource
 def load_model():
-    tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-j-6B")
-    model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B")
-    return pipeline("text-generation", model=model, tokenizer=tokenizer)
+    return pipeline("text-generation", model="distilgpt2")
 
 # Page title
 st.set_page_config(page_title='IZI MACHINE LEARNING', page_icon='🤖', layout='wide')
@@ -40,7 +38,7 @@ with st.expander('About this app'):
     ''', language='markdown')
 
 # Chat with the model
-st.header("Chat with GPT-J")
+st.header("Chat with distilGPT-2")
 user_input = st.text_input("Ask a question:")
 if user_input:
     model = load_model()
