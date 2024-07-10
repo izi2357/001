@@ -7,6 +7,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
 import time
+import zipfile
 from transformers import pipeline
 
 # Load the distilGPT-2 model
@@ -44,3 +45,66 @@ if user_input:
     model = load_model()
     response = model(user_input, max_length=50, do_sample=True)[0]['generated_text']
     st.write(response)
+
+# Main ML app functionality
+st.header("Machine Learning Model Builder")
+
+# Sidebar for dataset selection
+with st.sidebar:
+    st.header("Step 1: Select Dataset")
+    uploaded_file = st.file_uploader("Upload your input CSV file", type=["csv"])
+    if uploaded_file:
+        data = pd.read_csv(uploaded_file)
+        st.write("Dataset preview:")
+        st.write(data.head())
+
+# Step 2: Data Preprocessing
+if uploaded_file:
+    st.header("Step 2: Data Preprocessing")
+    st.markdown("Select features and target variable for the ML model.")
+    
+    all_columns = data.columns.tolist()
+    features = st.multiselect("Select feature columns", all_columns)
+    target = st.selectbox("Select target column", all_columns)
+    
+    if features and target:
+        X = data[features]
+        y = data[target]
+        
+        st.write("Selected features preview:")
+        st.write(X.head())
+        
+        st.write("Selected target preview:")
+        st.write(y.head())
+        
+        # Split the data
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Step 3: Model Building
+        st.header("Step 3: Model Building")
+        model_type = st.selectbox("Select model type", ["Random Forest", "Linear Regression"])
+
+        if model_type == "Random Forest":
+            n_estimators = st.slider("Number of trees in forest", 1, 100)
+            model = RandomForestRegressor(n_estimators=n_estimators)
+        else:
+            model = LinearRegression()
+
+        # Train the model
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+
+        # Display results
+        st.header("Step 4: Model Results")
+        st.write("Mean Squared Error:", mean_squared_error(y_test, y_pred))
+        st.write("R2 Score:", r2_score(y_test, y_pred))
+
+        # Plot results
+        st.subheader("Prediction vs Actual")
+        chart_data = pd.DataFrame({"Actual": y_test, "Predicted": y_pred})
+        chart = alt.Chart(chart_data.reset_index()).mark_circle(size=60).encode(
+            x='Actual',
+            y='Predicted',
+            tooltip=['Actual', 'Predicted']
+        ).interactive()
+        st.altair_chart(chart, use_container_width=True)
