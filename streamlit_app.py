@@ -8,13 +8,6 @@ from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-# Load the GPT-Neo model and tokenizer
-@st.cache_resource
-def load_model():
-    tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-2.7B")
-    model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-2.7B")
-    return tokenizer, model
-
 # Page title
 st.set_page_config(page_title='IZI MACHINE LEARNING', page_icon='🤖', layout='wide')
 st.title('🤖 IZI MACHINE LEARNING')
