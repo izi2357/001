@@ -44,9 +44,12 @@ with st.sidebar:
     st.header("Step 1: Select Dataset")
     uploaded_file = st.file_uploader("Upload your input CSV file", type=["csv"])
     if uploaded_file:
-        data = pd.read_csv(uploaded_file)
-        st.write("Dataset preview:")
-        st.write(data.head())
+        try:
+            data = pd.read_csv(uploaded_file)
+            st.write("Dataset preview:")
+            st.write(data.head())
+        except Exception as e:
+            st.error(f"Error loading dataset: {e}")
 
 # Step 2: Data Preprocessing
 if uploaded_file:
@@ -58,58 +61,67 @@ if uploaded_file:
     target = st.selectbox("Select target column", all_columns)
     
     if features and target:
-        X = data[features]
-        y = data[target]
-        
-        # Check for non-numeric data in target
         try:
-            y = pd.to_numeric(y)
-        except ValueError:
-            st.error("The target column contains non-numeric data, which cannot be processed.")
-            st.stop()
+            X = data[features]
+            y = data[target]
+            
+            # Check for non-numeric data in target
+            try:
+                y = pd.to_numeric(y)
+            except ValueError:
+                st.error("The target column contains non-numeric data, which cannot be processed.")
+                st.stop()
 
-        st.write("Selected features preview:")
-        st.write(X.head())
-        
-        st.write("Selected target preview:")
-        st.write(y.head())
-        
-        # Split the data
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            st.write("Selected features preview:")
+            st.write(X.head())
+            
+            st.write("Selected target preview:")
+            st.write(y.head())
+            
+            # Split the data
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        except Exception as e:
+            st.error(f"Error preprocessing data: {e}")
 
         # Step 3: Model Building
         st.header("Step 3: Model Building")
         model_type = st.selectbox("Select model type", ["Random Forest", "Linear Regression"])
 
-        if model_type == "Random Forest":
-            n_estimators = st.slider("Number of trees in forest", 1, 100)
-            model = RandomForestRegressor(n_estimators=n_estimators)
-        else:
-            model = LinearRegression()
+        try:
+            if model_type == "Random Forest":
+                n_estimators = st.slider("Number of trees in forest", 1, 100)
+                model = RandomForestRegressor(n_estimators=n_estimators)
+            else:
+                model = LinearRegression()
 
-        # Train the model
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
+            # Train the model
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
 
-        # Display results
-        st.header("Step 4: Model Results")
-        st.write("Mean Squared Error:", mean_squared_error(y_test, y_pred))
-        st.write("R2 Score:", r2_score(y_test, y_pred))
+            # Display results
+            st.header("Step 4: Model Results")
+            st.write("Mean Squared Error:", mean_squared_error(y_test, y_pred))
+            st.write("R2 Score:", r2_score(y_test, y_pred))
 
-        # Plot results
-        st.subheader("Prediction vs Actual")
-        chart_data = pd.DataFrame({"Actual": y_test, "Predicted": y_pred})
-        chart = alt.Chart(chart_data.reset_index()).mark_circle(size=60).encode(
-            x='Actual',
-            y='Predicted',
-            tooltip=['Actual', 'Predicted']
-        ).interactive()
-        st.altair_chart(chart, use_container_width=True)
+            # Plot results
+            st.subheader("Prediction vs Actual")
+            chart_data = pd.DataFrame({"Actual": y_test, "Predicted": y_pred})
+            chart = alt.Chart(chart_data.reset_index()).mark_circle(size=60).encode(
+                x='Actual',
+                y='Predicted',
+                tooltip=['Actual', 'Predicted']
+            ).interactive()
+            st.altair_chart(chart, use_container_width=True)
+        except Exception as e:
+            st.error(f"Error building model: {e}")
 
 # Add the text generation part to the main functionality
 st.header("Text Generation with GPT-Neo")
 user_input = st.text_input("Enter a prompt for text generation:")
 if user_input:
-    model = load_model()
-    response = model(user_input, max_length=50, do_sample=True, truncation=True)[0]['generated_text']
-    st.write(response)
+    try:
+        model = load_model()
+        response = model(user_input, max_length=50, do_sample=True, truncation=True)[0]['generated_text']
+        st.write(response)
+    except Exception as e:
+        st.error(f"Error generating text: {e}")
