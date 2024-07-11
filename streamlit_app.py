@@ -6,12 +6,14 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
-from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
-# Load the GPT-Neo model
+# Load the GPT-Neo model and tokenizer
 @st.cache_resource
 def load_model():
-    return pipeline("text-generation", model="EleutherAI/gpt-neo-2.7B")
+    tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-2.7B")
+    model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-2.7B")
+    return tokenizer, model
 
 # Page title
 st.set_page_config(page_title='IZI MACHINE LEARNING', page_icon='🤖', layout='wide')
@@ -120,8 +122,10 @@ st.header("Text Generation with GPT-Neo")
 user_input = st.text_input("Enter a prompt for text generation:")
 if user_input:
     try:
-        model = load_model()
-        response = model(user_input, max_length=50, do_sample=True, truncation=True)[0]['generated_text']
+        tokenizer, model = load_model()
+        inputs = tokenizer(user_input, return_tensors="pt")
+        outputs = model.generate(inputs.input_ids, max_length=50, pad_token_id=tokenizer.eos_token_id)
+        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
         st.write(response)
     except Exception as e:
         st.error(f"Error generating text: {e}")
