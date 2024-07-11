@@ -6,8 +6,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
-import time
-import zipfile
 from transformers import pipeline
 
 # Load the distilGPT-2 model
@@ -34,17 +32,9 @@ with st.expander('About this app'):
     st.markdown('Libraries used:')
     st.code('''- Pandas for data wrangling
 - Scikit-learn for building a machine learning model
-- Transformers for NLP
-- Streamlit for the web interface
+- Altair for data visualization
+- Transformers for text generation
     ''', language='markdown')
-
-# Chat with the model
-st.header("Chat with distilGPT-2")
-user_input = st.text_input("Ask a question:")
-if user_input:
-    model = load_model()
-    response = model(user_input, max_length=50, do_sample=True)[0]['generated_text']
-    st.write(response)
 
 # Main ML app functionality
 st.header("Machine Learning Model Builder")
@@ -108,3 +98,11 @@ if uploaded_file:
             tooltip=['Actual', 'Predicted']
         ).interactive()
         st.altair_chart(chart, use_container_width=True)
+
+# Add the text generation part to the main functionality
+st.header("Text Generation with distilGPT-2")
+user_input = st.text_input("Enter a prompt for text generation:")
+if user_input:
+    model = load_model()
+    response = model(user_input, max_length=50, do_sample=True)[0]['generated_text']
+    st.write(response)
