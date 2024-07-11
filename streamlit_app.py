@@ -8,10 +8,10 @@ from sklearn.metrics import mean_squared_error, r2_score
 import altair as alt
 from transformers import pipeline
 
-# Load the distilGPT-2 model
+# Load the GPT-Neo model
 @st.cache_resource
 def load_model():
-    return pipeline("text-generation", model="distilgpt2")
+    return pipeline("text-generation", model="EleutherAI/gpt-neo-2.7B")
 
 # Page title
 st.set_page_config(page_title='IZI MACHINE LEARNING', page_icon='🤖', layout='wide')
@@ -100,7 +100,7 @@ if uploaded_file:
         st.altair_chart(chart, use_container_width=True)
 
 # Add the text generation part to the main functionality
-st.header("Text Generation with distilGPT-2")
+st.header("Text Generation with GPT-Neo")
 user_input = st.text_input("Enter a prompt for text generation:")
 if user_input:
     model = load_model()
