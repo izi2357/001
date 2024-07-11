@@ -31,9 +31,9 @@ with st.expander('About this app'):
 
     st.markdown('Libraries used:')
     st.code('''- Pandas for data wrangling
-- Scikit-learn for building a machine learning model
-- Altair for data visualization
-- Transformers for text generation
+    - Scikit-learn for building a machine learning model
+    - Altair for data visualization
+    - Transformers for text generation
     ''', language='markdown')
 
 # Main ML app functionality
