@@ -50,7 +50,10 @@ with st.expander('About this app'):
 
 
 # Sidebar for accepting input parameters
-@@ -41,11 +43,12 @@
+with st.sidebar:
+    # Load data
+    st.header('1.1. Input data')
+    st.markdown('**1. Use custom data**')
     uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file, index_col=False)
@@ -64,7 +67,30 @@ with st.expander('About this app'):
     example_csv = pd.read_csv('https://raw.githubusercontent.com/dataprofessor/data/master/delaney_solubility_with_descriptors.csv')
     csv = convert_df(example_csv)
     st.download_button(
-@@ -80,9 +83,13 @@ def convert_df(input_df):
+        label="Download example CSV",
+        data=csv,
+        file_name='delaney_solubility_with_descriptors.csv',
+        mime='text/csv',
+    )
+    # Select example data
+    st.markdown('**1.2. Use example data**')
+    example_data = st.toggle('Load example data')
+    if example_data:
+        df = pd.read_csv('https://raw.githubusercontent.com/dataprofessor/data/master/delaney_solubility_with_descriptors.csv')
+    st.header('2. Set Parameters')
+    parameter_split_size = st.slider('Data split ratio (% for Training Set)', 10, 90, 80, 5)
+    st.subheader('2.1. Learning Parameters')
+    with st.expander('See parameters'):
+        parameter_n_estimators = st.slider('Number of estimators (n_estimators)', 0, 1000, 100, 100)
+        parameter_max_features = st.select_slider('Max features (max_features)', options=['all', 'sqrt', 'log2'])
+        parameter_min_samples_split = st.slider('Minimum number of samples required to split an internal node (min_samples_split)', 2, 10, 2, 1)
+        parameter_min_samples_leaf = st.slider('Minimum number of samples required to be at a leaf node (min_samples_leaf)', 1, 10, 2, 1)
+    st.subheader('2.2. General Parameters')
+    with st.expander('See parameters', expanded=False):
+        parameter_random_state = st.slider('Seed number (random_state)', 0, 1000, 42, 1)
+        parameter_criterion = st.select_slider('Performance measure (criterion)', options=['squared_error', 'absolute_error', 'friedman_mse'])
+        parameter_bootstrap = st.select_slider('Bootstrap samples when building trees (bootstrap)', options=[True, False])
+        parameter_oob_score = st.select_slider('Whether to use out-of-bag samples to estimate the R^2 on unseen data (oob_score)', options=[False, True])
 
     sleep_time = st.slider('Sleep time', 0, 3, 0)
 
@@ -79,7 +105,15 @@ if uploaded_file or example_data:
 
         st.write("Loading data ...")
         time.sleep(sleep_time)
-@@ -99,25 +106,29 @@ def convert_df(input_df):
+        st.write("Preparing data ...")
+        time.sleep(sleep_time)
+        X = df.iloc[:,:-1]
+        y = df.iloc[:,-1]
+            
+        st.write("Splitting data ...")
+        time.sleep(sleep_time)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=(100-parameter_split_size)/100, random_state=parameter_random_state)
+    
         st.write("Model training ...")
         time.sleep(sleep_time)
 
@@ -125,7 +159,11 @@ if uploaded_file or example_data:
 
         st.write("Evaluating performance metrics ...")
         time.sleep(sleep_time)
-@@ -129,20 +140,12 @@ def convert_df(input_df):
+        train_mse = mean_squared_error(y_train, y_train_pred)
+        train_r2 = r2_score(y_train, y_train_pred)
+        test_mse = mean_squared_error(y_test, y_test_pred)
+        test_r2 = r2_score(y_test, y_test_pred)
+        
         st.write("Displaying performance metrics ...")
         time.sleep(sleep_time)
         parameter_criterion_string = ' '.join([x.capitalize() for x in parameter_criterion.split('_')])
@@ -150,7 +188,44 @@ if uploaded_file or example_data:
     col = st.columns(4)
     col[0].metric(label="No. of samples", value=X.shape[0], delta="")
     col[1].metric(label="No. of X variables", value=X.shape[1], delta="")
-@@ -189,33 +192,35 @@ def convert_df(input_df):
+    col[2].metric(label="No. of Training samples", value=X_train.shape[0], delta="")
+    col[3].metric(label="No. of Test samples", value=X_test.shape[0], delta="")
+    
+    with st.expander('Initial dataset', expanded=True):
+        st.dataframe(df, height=210, use_container_width=True)
+    with st.expander('Train split', expanded=False):
+        train_col = st.columns((3,1))
+        with train_col[0]:
+            st.markdown('**X**')
+            st.dataframe(X_train, height=210, hide_index=True, use_container_width=True)
+        with train_col[1]:
+            st.markdown('**y**')
+            st.dataframe(y_train, height=210, hide_index=True, use_container_width=True)
+    with st.expander('Test split', expanded=False):
+        test_col = st.columns((3,1))
+        with test_col[0]:
+            st.markdown('**X**')
+            st.dataframe(X_test, height=210, hide_index=True, use_container_width=True)
+        with test_col[1]:
+            st.markdown('**y**')
+            st.dataframe(y_test, height=210, hide_index=True, use_container_width=True)
+    # Zip dataset files
+    df.to_csv('dataset.csv', index=False)
+    X_train.to_csv('X_train.csv', index=False)
+    y_train.to_csv('y_train.csv', index=False)
+    X_test.to_csv('X_test.csv', index=False)
+    y_test.to_csv('y_test.csv', index=False)
+    
+    list_files = ['dataset.csv', 'X_train.csv', 'y_train.csv', 'X_test.csv', 'y_test.csv']
+    with zipfile.ZipFile('dataset.zip', 'w') as zipF:
+        for file in list_files:
+            zipF.write(file, compress_type=zipfile.ZIP_DEFLATED)
+    with open('dataset.zip', 'rb') as datazip:
+        btn = st.download_button(
+                label='Download ZIP',
+                data=datazip,
+                file_name="dataset.zip",
+                mime="application/octet-stream"
                 )
 
     # Display model parameters
