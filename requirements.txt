@@ -1,6 +1,10 @@
 streamlit
 pandas
 numpy
-pytorch
+torch
 transformers
 scikit-learn
+altair
+time
+zipfile
+base64
